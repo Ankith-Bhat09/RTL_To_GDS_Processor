@@ -1,16 +1,19 @@
 `timescale 1ns / 1ps
+`include "../rtl/i2c_master.v"
+`include "../rtl/i2c_controller.v"
 ////////////////////////////////////////////////////////////////////////////
+
 module i2c_top(
-	input wire PCLK,                   
-	input wire PRESETn,                  
-	input wire PSEL,              
-	input wire PENABLE,
-	input wire PWRITE,            
-	input wire [7:0] PADDR,       
-	input wire [7:0] PWDATA,
-	output [7:0]PRDATA,
-	inout i2c_scl,
-	inout i2c_sda
+    input wire PCLK,                   
+    input wire PRESETn,                  
+    input wire PSEL,              
+    input wire PENABLE,
+    input wire PWRITE,            
+    input wire [7:0] PADDR,       
+    input wire [7:0] PWDATA,
+    output [7:0]PRDATA,
+    inout i2c_scl,
+    inout i2c_sda
     );
     
     wire [7:0] data_out;
