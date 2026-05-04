@@ -62,13 +62,13 @@ module i2c_master(
     reg NackSent=0; // not used
     reg NackRcvd = 0;
 
-    supply0 gnd;
+
     wire rw;   // R/W status bit
     wire rep; // repeated start
     wire NackMod; // control signal to send NACK bit 
 
     assign i2c_scl = (scl)?1'b1:1'b0;
-    assign i2c_sda = (state == ACK || state == RDATA || state == WWACK || n_state == ACK || n_state == WWACK) ? 1'bz : ( (sda)? 1'b1 : gnd );
+    assign i2c_sda = (state == ACK || state == RDATA || state == WWACK || n_state == ACK || n_state == WWACK) ? 1'bz : ( (sda)? 1'bZ : 1'b0 );		//Changed this for different data
 
     always@(posedge clk)
     begin
@@ -98,13 +98,13 @@ module i2c_master(
             begin
                 Rrdy_set <= 1'b0;
             end
-            else if(state  == RACK && Rrdy_temp == 1'b1)
+            if(state  == RACK && Rrdy_temp == 1'b1)//changed this for different data
             begin
                 data_out <= RX_reg;
                 Rrdy_set  <=  1'b1;             
                 Rrdy_temp <= 1'b0; 
             end
-            else if(state == ACK || state == WWACK || state == START)
+            if(state == ACK || state == WWACK || state == START)		//changed this for different data
             begin
             if(xrdy_temp)
             begin        
@@ -154,7 +154,7 @@ module i2c_master(
                     en <= 0;
                     NackRcvd <= 1'b0;
                     count <= 4'b0000;  
-                    if (!enable) ena <= 0;      //This line is added which dosent stop after 1 transfer
+
                     if(enable && (~ena))
                         n_state <= START;
                     else
