@@ -13,13 +13,8 @@ module i2c_tb;
 
     wire i2c_scl;
     wire i2c_sda;
-
-    initial
-    begin
-        $dumpfile("i2c_tb.vcd");
-        $dumpvars(0,i2c_tb);
-    end
-
+    integer bit_count = 0;
+    integer ack_count = 0;
     // I2C Open-Drain Bus Pull-ups
     // These force the bus high when no one is pulling it to ground
     pullup(i2c_scl);
@@ -55,7 +50,7 @@ module i2c_tb;
             PWRITE = 1;
             PADDR = addr;
             PWDATA = data;
-            PENABLE = 0;
+            
             
             @(posedge PCLK);
             PENABLE = 1; 
@@ -94,7 +89,7 @@ module i2c_tb;
     // Drive SDA low if dummy_sda_pull is 1
     assign i2c_sda = (dummy_sda_pull) ? 1'b0 : 1'bz;
     
-    integer bit_count = 0;
+
     
     always @(negedge i2c_scl) begin
         // Reset bit count on a basic heuristic 
@@ -103,6 +98,7 @@ module i2c_tb;
             // 9th Clock Cycle: Pull SDA low to send ACK
             dummy_sda_pull <= 1'b1; 
             bit_count <= 0;
+	    ack_count <= ack_count +1;
             $display("[%0t] Dummy Slave: Sent ACK", $time);
         end else begin
             // Release SDA and count data bits
@@ -133,40 +129,23 @@ module i2c_tb;
         // Step 1: Configure Target Slave Address (Register 0x08)
         // Let's target Slave Address 0x5A
         apb_write(8'h08, 8'h5A); 
-        
-        // Step 2: Configure Data Count (Register 0x04)
-        // We want to send 1 byte
-        apb_write(8'h04, 8'h01); 
-        
-        // Step 3: Load the Data to Transmit (Register 0x10)
-        // Let's send the payload 0xEE (1110_1110 in binary)
+        apb_write(8'h04, 8'h05); 
         apb_write(8'h10, 8'hEE);
 
-        // Step 4: Configure Control Register to START the transaction
-        // Address 0x00
-        // Bits [7:6] = 00 (100kHz I2C Clock Mode)
-        // Bit [5] = 0 (No Repeated Start)
-        // Bit [4] = 0 (Write Transaction)
-        // Bit [1] = 1 (Enable Transaction)
-        // Bit [0] = 1 (Reset Released - note: your module uses active-low reset!)
-        // Binary: 0000_0011 = Hex: 0x03
-        apb_write(8'h00, 8'h03);
-        
-        $display("[%0t] Controller Configured. I2C Bus active...", $time);
 
+        apb_write(8'h00, 8'h03);
+        $display("[%0t] Controller Configured. I2C Bus active...", $time);
+	wait(ack_count == 2);
+        apb_write(8'h10, 8'h11);
+	wait(ack_count == 3);
+        apb_write(8'h10, 8'hEE);
         // Step 5: Wait for the I2C transaction to complete
         // A 100kHz clock has a 10us period. 
         // 1 full byte write requires ~20 clock cycles (Start + Addr + ACK + Data + ACK + Stop)
         // 20 * 10us = 200us. Wait 250us to be safe.
-        #250000;
-
-        // Step 6: Read the Status Register (Address 0x0C)
-        // Expecting Bit 0 (busy) to be 0, and Bit 7 (stop) to be 1.
-        apb_read(8'h0C,captured_data);
-        $display("[%0t] Transaction finished. Status Register: %h", $time, PRDATA);
-
-        $display("--- Testbench Completed ---");
+	#200000;
         $finish;
     end
+
 
 endmodule
