@@ -154,7 +154,7 @@ module i2c_master(
                     en <= 0;
                     NackRcvd <= 1'b0;
                     count <= 4'b0000;  
-
+                    ena <= 0;
                     if(enable && (~ena))
                         n_state <= START;
                     else
